@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Маршрут по Китаю</title>
+  <meta charset="utf-8" />
+  <style>
+    body {
+      background-color: #f0f8ff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      color: #333;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 30px;
+      transition: all 0.3s ease;
+    }
+    h1 {
+      color: #1a3a6c;
+      margin-bottom: 25px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .form-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 30px;
+      justify-content: center;
+    }
+    input {
+      padding: 12px 15px;
+      border: 2px solid #d0e7ff;
+      border-radius: 10px;
+      font-size: 16px;
+      width: 250px;
+      transition: all 0.3s;
+      background-color: #f8fafc;
+    }
+    input:focus {
+      outline: none;
+      border-color: #4a90e2;
+      box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+      background-color: white;
+    }
+    button {
+      padding: 12px 25px;
+      background: linear-gradient(to right, #1a3a6c, #2c5282);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 6px rgba(43, 82, 133, 0.2);
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 8px rgba(43, 82, 133, 0.3);
+      background: linear-gradient(to right, #2c5282, #3182ce);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    #map {
+      width: 100%;
+      height: 500px;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+      background: #f0f8ff;
+      border: 1px solid #d0e7ff;
+    }
+    .instructions {
+      background-color: #f0f9ff;
+      border-left: 4px solid #4a90e2;
+      padding: 15px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #2c5282;
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px 15px;
+      }
+      #map {
+        height: 400px;
+      }
+      input, button {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Маршрут по Китаю</h1>
+    
+    <div class="form-group">
+      <input type="text" id="city-input" placeholder="Название города (например: Пекин)">
+      <input type="text" id="place-input" placeholder="Название места (например: Запретный город)">
+      <button onclick="addMarker()">Добавить на карту</button>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div class="instructions">
+      <strong>Инструкция:</strong> Введите название города (Пекин, Шанхай, Гуанчжоу, Сиань и др.) и место. 
+      Замените YOUR_YANDEX_API_KEY на ваш реальный ключ Яндекс.Карт.
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    // Координаты основных городов Китая
+    const cityCoordinates = {
+      'Пекин': [39.9042, 116.4074],
+      'Шанхай': [31.2304, 121.4737],
+      'Гуанчжоу': [23.1291, 113.2644],
+      'Сиань': [34.3416, 108.9402],
+      'Ханчжоу': [30.2741, 120.1551],
+      'Чэнду': [30.6586, 104.0648],
+      'Урумчи': [43.8256, 87.6169],
+      'Харбин': [45.8038, 126.5347]
+    };
+
+    let map;
+    let markers = [];
+
+    // Инициализация карты
+    function init() {
+      map = new ymaps.Map("map", {
+        center: [35.8617, 104.1954], // Центр Китая
+        zoom: 5,
+        controls: ['zoomControl', 'fullscreenControl']
+      });
+
+      // Настройка внешнего вида
+      map.behaviors.disable('scrollZoom'); // Отключаем зум колесом (для удобства)
+    }
+
+    // Добавление метки
+    function addMarker() {
+      const cityInput = document.getElementById('city-input');
+      const placeInput = document.getElementById('place-input');
+      const cityName = cityInput.value.trim();
+      const placeName = placeInput.value.trim();
+      
+      if (!cityName || !placeName) {
+        alert('Пожалуйста, заполните оба поля');
+        return;
+      }
+      
+      const normalizedCity = cityName.charAt(0).toUpperCase() + cityName.slice(1).toLowerCase();
+      const coords = cityCoordinates[normalizedCity];
+      
+      if (!coords) {
+        alert('Город не найден. Доступные города: Пекин, Шанхай, Гуанчжоу, Сиань, Ханчжоу, Чэнду, Урумчи, Харбин');
+        return;
+      }
+      
+      // Создаем метку
+      const placemark = new ymaps.Placemark(
+        coords,
+        {
+          balloonContent: `<b>${placeName}</b><br>${normalizedCity}`,
+          iconCaption: placeName
+        },
+        {
+          preset: 'islands#redCircleDotIcon',
+          iconColor: '#ff4444'
+        }
+      );
+
+      map.geoObjects.add(placemark);
+      
+      // Центрируем карту
+      map.setCenter(coords);
+      map.setZoom(10);
+      
+      // Очистка полей
+      cityInput.value = '';
+      placeInput.value = '';
+      cityInput.focus();
+    }
+    
+    // Обработка Enter
+    document.getElementById('city-input').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') document.getElementById('place-input').focus();
+    });
+    
+    document.getElementById('place-input').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') addMarker();
+    });
+  </script>
+
+  <!-- Подключение API Яндекс.Карт -->
+  <!-- ЗАМЕНИТЕ YOUR_YANDEX_API_KEY НА СВОЙ РЕАЛЬНЫЙ КЛЮЧ -->
+  <script src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_YANDEX_API_KEY&lang=ru_RU" type="text/javascript"></script>
+  
+  <script type="text/javascript">
+    // Инициализация после загрузки API
+    ymaps.ready(init);
+  </script>
+</body>
+</html>
